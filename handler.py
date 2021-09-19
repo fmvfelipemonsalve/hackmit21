@@ -10,8 +10,9 @@ def whatsapp(event, context):
 
     user_id = params.get('WaId')
     message = params.get('Body')
+    coordinates = (params.get('Latitude'), params.get('Longitude'))
 
-    response = serve(user_id, message)
+    response = serve(user_id, message, coordinates)
 
     # Put it in a TwiML response
     resp.message(response)
