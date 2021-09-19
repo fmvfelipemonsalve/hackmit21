@@ -121,6 +121,7 @@ class API():
         self.stores = [store for store in self.stores if not store['user_id'] == user_id]
 
     def get_all_stores_TEXT(self, coordinates):
+        
         res = get_distance(coordinates, self.stores)
         stores = self.stores
         for i, store in enumerate(stores):
@@ -169,9 +170,9 @@ if __name__ == "__main__":
         message = input()
         if message == 'quit':
             break
-        if message == 'location':
+        elif message == 'location':
             reply = api.serve(user_id, '', (42,-71), None)
-        if message == 'image':
+        elif message == 'image':
             reply = api.serve(user_id, '', None, "https://picsum.photos/200/300")
         else:
             reply = api.serve(user_id, message, None, None)
