@@ -21,3 +21,6 @@ node_modules
 
 # Serverless directories
 .serverless
+
+# keys
+bot_brain/secrets.py

@@ -2,6 +2,10 @@ from twilio.twiml.messaging_response import MessagingResponse
 
 from bot_brain.serve import serve
 
+from bot_brain import API
+
+api = API()
+
 def whatsapp(event, context):
     resp = MessagingResponse()
 
@@ -16,7 +20,7 @@ def whatsapp(event, context):
 
     image_url = params.get('MediaUrl0') if params.get('NumMedia') else None
 
-    response, response_image = serve(user_id, message, coordinates, image_url)
+    response, response_image = api.serve(user_id, message, coordinates, image_url)
 
     # Put it in a TwiML response
     msg = resp.message(response)
