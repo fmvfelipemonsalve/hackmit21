@@ -10,7 +10,9 @@ def whatsapp(event, context):
 
     user_id = params.get('WaId')
     message = params.get('Body')
-    coordinates = (params.get('Latitude'), params.get('Longitude'))
+
+    latitude, longitude = params.get('Latitude'), params.get('Longitude')
+    coordinates = None if latitude == None or longitude == None else (latitude, longitude)
 
     response = serve(user_id, message, coordinates)
 
