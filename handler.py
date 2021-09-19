@@ -12,10 +12,16 @@ def whatsapp(event, context):
     message = params.get('Body')
 
     latitude, longitude = params.get('Latitude'), params.get('Longitude')
-    coordinates = None if latitude == None or longitude == None else (latitude, longitude)
+    coordinates = (latitude, longitude) if (latitude != None and longitude != None) else None
 
-    response = serve(user_id, message, coordinates)
+    image_url = params.get('MediaUrl0') if params.get('NumMedia') else None
+
+    response, response_image = serve(user_id, message, coordinates, image_url)
 
     # Put it in a TwiML response
-    resp.message(response)
+    msg = resp.message(response)
+
+    if response_image:
+        msg.media(response_image)
+
     return str(resp)
