@@ -1,8 +1,7 @@
+import os
 from twilio.twiml.messaging_response import MessagingResponse
 
-from bot_brain.serve import serve
-
-from bot_brain import API
+from bot_brain.serve import API
 
 api = API()
 
@@ -11,6 +10,7 @@ def whatsapp(event, context):
 
     params = event['body']
     print(params)
+    print(os.environ)
 
     user_id = params.get('WaId')
     message = params.get('Body')

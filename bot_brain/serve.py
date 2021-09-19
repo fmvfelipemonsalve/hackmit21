@@ -1,7 +1,6 @@
 import requests
 import json
-
-from secrets import GOOGLE_KEY
+import os
 
 
 QUIT = "('quit' to exit)"
@@ -43,7 +42,7 @@ class Convo():
                 self.current_node = BUY_CATEGORY
                 return BUY_CATEGORY + "\n"+ self.api.get_all_stores_TEXT(coordinates)
             elif message == "sell":
-                stores = api.get_my_stores(user_id)
+                stores = self.api.get_my_stores(self.user_id)
                 if len(stores) == 0:
                     self.current_node = SELL_CREATE_MESSAGE
                 else:
@@ -74,7 +73,7 @@ class Convo():
 def get_distance(origin, stores):
     origin = ",".join([str(each) for each in origin])
     destinations = "|".join([",".join([str(each) for each in store["coordinates"]]) for store in stores])
-    url = f'https://maps.googleapis.com/maps/api/distancematrix/json?origins={origin}&destinations={destinations}&key={GOOGLE_KEY}'
+    url = f'https://maps.googleapis.com/maps/api/distancematrix/json?origins={origin}&destinations={destinations}&key={os.environ.get("GOOGLE_KEY")}'
     response = requests.get(url)
 
     if response.status_code != 200:

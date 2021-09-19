@@ -18,6 +18,8 @@ functions:
             headers:
               Content-Type: "'application/xml'"
             template: $input.path('$')
+    environment:
+      GOOGLE_KEY: ${ssm:/hackmit21-google-key~true}
 
 plugins:
   - serverless-python-requirements
