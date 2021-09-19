@@ -1,7 +1,5 @@
 import requests
 import json
-import random
-from random import randint
 
 from secrets import GOOGLE_KEY
 
@@ -140,10 +138,6 @@ class API():
     
     def get_my_stores(self, user_id):
         return [store for store in self.stores if store["user_id"] == user_id]
-    
-    def update(self, user_id, message):
-        user = self.get_user(user_id)
-        return user["conversation"].update(message)
 
     def serve(self, user_id, message, coordinates, image_url = ""):
         if not self.user_exists(user_id):
