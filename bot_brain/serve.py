@@ -60,7 +60,7 @@ class Convo():
         elif self.current_node == BUY_CATEGORY:
             i = int(message)
             self.current_node = BUY_OR_SELL
-            return json.dumps(self.api.stores[i], indent=4) + "\n" + BUY_OR_SELL
+            return json.dumps(self.api.stores[i], indent=4) + "\n" + BUY_OR_SELL, self.api.stores[i]["image_url"]
 
         
         elif self.current_node == SELL_CREATE_MESSAGE:
@@ -91,7 +91,7 @@ class API():
     def __init__(self):
         self.users = []
         self.conversations = []
-        self.stores = [{"message": "tacos", "user_id": "9722949822", "coordinates": (42, -72), "image_url": "test"}, {"message": "pupusas", "user_id": "9722949823", "coordinates": (42, -71), "image_url": "test"}]
+        self.stores = [{"message": "tacos", "user_id": "9722949822", "coordinates": (42, -72), "image_url": "https://picsum.photos/200/300"}, {"message": "pupusas", "user_id": "9722949823", "coordinates": (42, -71), "image_url": "https://picsum.photos/200/300"}]
     
     
     
@@ -146,6 +146,9 @@ class API():
 
         reply = user["conversation"].update(message, coordinates, image_url)
 
+        image_url = None
+        if type(reply) is tuple:
+            reply, image_url = reply
         return reply, image_url
 
 
@@ -154,11 +157,11 @@ if __name__ == "__main__":
     api = API()
 
     user_id = "9722949822"
-    reply = api.serve(user_id, "opening message", [42,-71])[0]
+    reply = api.serve(user_id, "opening message", [42,-71])
 
     while(True):
         print(reply)
         message = input()
         if message == 'quit':
             break
-        reply = api.serve(user_id, message, [42,-71], "new_image_url")[0]
+        reply = api.serve(user_id, message, [42,-71], "https://picsum.photos/200/300")
