@@ -7,9 +7,21 @@ provider:
   lambdaHashingVersion: '20201221'
 
 functions:
-  hello:
-    handler: handler.hello
+  whatsapp:
+    handler: handler.whatsapp
     events:
-      - httpApi:
+      - http:
           path: /
-          method: get
+          method: post
+          integration: lambda
+          response:
+            headers:
+              Content-Type: "'application/xml'"
+            template: $input.path('$')
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux

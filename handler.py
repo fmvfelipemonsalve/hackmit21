@@ -1,21 +1,14 @@
-import json
+from urllib.parse import unquote
+from twilio.twiml.messaging_response import MessagingResponse
 
+def whatsapp(event, context):
 
-def hello(event, context):
-    body = {
-        "message": "Go Serverless v2.0! Your function executed successfully!",
-        "input": event,
-    }
+    body = event['body']
 
-    response = {"statusCode": 200, "body": json.dumps(body)}
+    print(body)
 
-    return response
+    # Put it in a TwiML response
+    resp = MessagingResponse()
+    resp.message('hi')
 
-    # Use this code if you don't use the http event with the LAMBDA-PROXY
-    # integration
-    """
-    return {
-        "message": "Go Serverless v1.0! Your function executed successfully!",
-        "event": event
-    }
-    """
+    return str(resp)
