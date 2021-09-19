@@ -1,6 +1,7 @@
 import requests
 import json
-import os
+
+from secrets import GOOGLE_KEY
 
 
 QUIT = "('quit' to exit)"
@@ -29,24 +30,35 @@ class Convo():
         self.user_id = user_id
         self.api = api
         self.current_node = BUY_OR_SELL
-        self.location = (0, 0)
-        self.category = "food"
-        self.products = None
+        self.coordinates = (0, 0)
     
     def update(self, message, coordinates, image_url):
         if message == "quit":
             self.current_node == BUY_OR_SELL
-        
+
         elif self.current_node == BUY_OR_SELL:
             if message == "buy":
-                self.current_node = BUY_CATEGORY
-                return BUY_CATEGORY + "\n"+ self.api.get_all_stores_TEXT(coordinates)
+                self.current_node = BUY_LOCATION
+                return BUY_LOCATION
             elif message == "sell":
-                stores = self.api.get_my_stores(self.user_id)
+                stores = api.get_my_stores(user_id)
                 if len(stores) == 0:
-                    self.current_node = SELL_CREATE_MESSAGE
+                    self.current_node = SELL_LOCATION 
                 else:
                     self.current_node = SELL_EDIT
+        elif self.current_node == BUY_LOCATION:
+            if not coordinates:
+                return "must share location!"
+            self.current_node = BUY_CATEGORY
+            return BUY_CATEGORY + "\n"+ self.api.get_all_stores_TEXT(coordinates)
+        
+        elif self.current_node == SELL_LOCATION:
+            if not coordinates:
+                return "must share location!"
+            self.coordinates = coordinates
+            self.current_node = SELL_CREATE_MESSAGE
+
+
         elif self.current_node == SELL_EDIT:
             if message == "Y":
                 self.api.delete_store(user_id)
@@ -63,7 +75,7 @@ class Convo():
 
         
         elif self.current_node == SELL_CREATE_MESSAGE:
-            self.api.stores.append({"message": message, "user_id": self.user_id, "coordinates": coordinates, "image_url": image_url})
+            self.api.stores.append({"message": message, "user_id": self.user_id, "coordinates": self.coordinates, "image_url": image_url})
             self.current_node = BUY_OR_SELL
 
             return "Your store is live! Type 'buy' to see it!"
@@ -73,7 +85,7 @@ class Convo():
 def get_distance(origin, stores):
     origin = ",".join([str(each) for each in origin])
     destinations = "|".join([",".join([str(each) for each in store["coordinates"]]) for store in stores])
-    url = f'https://maps.googleapis.com/maps/api/distancematrix/json?origins={origin}&destinations={destinations}&key={os.environ.get("GOOGLE_KEY")}'
+    url = f'https://maps.googleapis.com/maps/api/distancematrix/json?origins={origin}&destinations={destinations}&key={GOOGLE_KEY}'
     response = requests.get(url)
 
     if response.status_code != 200:
@@ -91,9 +103,6 @@ class API():
         self.users = []
         self.conversations = []
         self.stores = [{"message": "tacos", "user_id": "9722949822", "coordinates": (42, -72), "image_url": "https://picsum.photos/200/300"}, {"message": "pupusas", "user_id": "9722949823", "coordinates": (42, -71), "image_url": "https://picsum.photos/200/300"}]
-    
-    
-    
 
     def add_user(self, user_id):
         user = {"user_id": user_id, "conversation": Convo(self, user_id)}
@@ -157,7 +166,6 @@ if __name__ == "__main__":
 
     user_id = "9722949822"
     reply = api.serve(user_id, "opening message", [42,-71])
-
     while(True):
         print(reply)
         message = input()
