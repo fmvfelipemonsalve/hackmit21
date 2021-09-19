@@ -1,8 +1,6 @@
 import requests
 import json
-
-from secrets import GOOGLE_KEY
-
+import os
 
 QUIT = "('quit' to exit)"
 BUY_OR_SELL = "Would you like to browse for products or sell them? Send 'buy' or 'sell'. " + QUIT
@@ -85,7 +83,7 @@ class Convo():
 def get_distance(origin, stores):
     origin = ",".join([str(each) for each in origin])
     destinations = "|".join([",".join([str(each) for each in store["coordinates"]]) for store in stores])
-    url = f'https://maps.googleapis.com/maps/api/distancematrix/json?origins={origin}&destinations={destinations}&key={GOOGLE_KEY}'
+    url = f'https://maps.googleapis.com/maps/api/distancematrix/json?origins={origin}&destinations={destinations}&key={os.environ.get("GOOGLE_KEY")}'
     response = requests.get(url)
 
     if response.status_code != 200:
@@ -165,10 +163,15 @@ if __name__ == "__main__":
     api = API()
 
     user_id = "9722949822"
-    reply = api.serve(user_id, "opening message", [42,-71])
+    reply = api.serve(user_id, "opening message", None)
     while(True):
         print(reply)
         message = input()
         if message == 'quit':
             break
-        reply = api.serve(user_id, message, [42,-71], "https://picsum.photos/200/300")
+        if message == 'location':
+            reply = api.serve(user_id, '', (42,-71), None)
+        if message == 'image':
+            reply = api.serve(user_id, '', None, "https://picsum.photos/200/300")
+        else:
+            reply = api.serve(user_id, message, None, None)
