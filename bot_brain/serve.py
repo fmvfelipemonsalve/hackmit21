@@ -6,19 +6,16 @@ QUIT = "('quit' to exit)"
 BUY_OR_SELL = "Would you like to browse for products or sell them? Send 'buy' or 'sell'. " + QUIT
 SELL_LOCATION = "Please share where you will be selling. LAT, LONG"
 BUY_LOCATION = "Please share your location with us. LAT, LONG"
-BUY_CATEGORY = "What kind of food are you looking for today?"
-
-SELL_CREATE_MESSAGE = "What are you selling? ex: popcicles - $1.25"
+BUY_CATEGORY = "What kind of food are you looking for today? Type 0 for more on (0)"
 
 SELL_EDIT = "You have a store associated with that number! Want to delete this store? Y/N"
 
-SELL_PHONE = "What is your phone number? Send your 10 digit phone number."
-SELL_CREATE = "We cannot find your number in our system. Please help us create your account by providing the following information. "
-SELL_CREATE_CATEGORY = "Please indicate the cateogry of your product below (i.e. 'tacos', 'mangonadas')"
-SELL_CREATE_PRODUCTS = "Please indicate specific products you sell or additional items (i.e. 'carne asada', 'sandia') This is optional. To skip, type 'skip'."
-state_properties = ["category", "products", "picture", "address", "open?"]
-HELP = "We cannot help you. Please make sure you are spelling your response correctly."
-
+SELL_CREATE_TITLE = "What are you selling? ex: popcicles!"
+SELL_CREATE_PRICE = "How much in $ does each unit cost?"
+SELL_CREATE_DESCRIPTION = "Describe what you are selling in more detail!"
+SELL_CREATE_IMAGES = "Share an image of what you are selling!"
+SELL_CONFIRM = "Does this look correct? Y/N"
+SELL_READY = "Your store is live! Type 'buy' to see it!" 
 
 
 class Convo():
@@ -28,9 +25,18 @@ class Convo():
         self.user_id = user_id
         self.api = api
         self.current_node = BUY_OR_SELL
+
         self.coordinates = (0, 0)
+        self.title = ""
+        self.price = 0
+        self.description = ""
+        self.image = ""
+
+        self.store = None
+        
     
-    def update(self, message, coordinates, image_url):
+    def update(self, message, coordinates, image):
+
         if message == "quit":
             self.current_node == BUY_OR_SELL
 
@@ -39,68 +45,86 @@ class Convo():
                 self.current_node = BUY_LOCATION
                 return BUY_LOCATION
             elif message == "sell":
-                stores = api.get_my_stores(user_id)
+                stores = self.api.get_my_stores(user_id)
                 if len(stores) == 0:
                     self.current_node = SELL_LOCATION 
                 else:
                     self.current_node = SELL_EDIT
+
         elif self.current_node == BUY_LOCATION:
             if not coordinates:
-                return "must share location!"
+                return "You must share your Whatsapp location!"
             self.current_node = BUY_CATEGORY
-            return BUY_CATEGORY + "\n"+ self.api.get_all_stores_TEXT(coordinates)
-        
-        elif self.current_node == SELL_LOCATION:
-            if not coordinates:
-                return "must share location!"
-            self.coordinates = coordinates
-            self.current_node = SELL_CREATE_MESSAGE
+            return BUY_CATEGORY + "\n"+ self.api.get_stores_sorted(coordinates)
 
-
-        elif self.current_node == SELL_EDIT:
-            if message == "Y":
-                self.api.delete_store(user_id)
-                self.current_node = BUY_OR_SELL
-                return "Your store was deleted!\n" + BUY_OR_SELL  
-            elif message == "N":
-                self.current_node = BUY_OR_SELL
-        
-        
         elif self.current_node == BUY_CATEGORY:
             i = int(message)
             self.current_node = BUY_OR_SELL
-            return json.dumps(self.api.stores[i], indent=4) + "\n" + BUY_OR_SELL, self.api.stores[i]["image_url"]
+            store = self.api.stores[i]
+            return f'{self.api.store_rep(store, True)}\n{BUY_OR_SELL}' , store["image"]
 
         
-        elif self.current_node == SELL_CREATE_MESSAGE:
-            self.api.stores.append({"message": message, "user_id": self.user_id, "coordinates": self.coordinates, "image_url": image_url})
-            self.current_node = BUY_OR_SELL
-
-            return "Your store is live! Type 'buy' to see it!"
+        elif self.current_node == SELL_EDIT:
+            if message == "Y":
+                self.api.delete_store(user_id)
+                self.current_node = SELL_LOCATION
+                return "Your store was deleted!\n" + SELL_LOCATION  
+            elif message == "N":
+                self.current_node = BUY_OR_SELL
+        
+        elif self.current_node == SELL_LOCATION:
+            if not coordinates:
+                return "You must share your Whatsapp location!"
+            self.coordinates = coordinates
+            self.current_node = SELL_CREATE_TITLE
+        elif self.current_node == SELL_CREATE_TITLE:
+            self.title = message
+            self.current_node = SELL_CREATE_PRICE
+        elif self.current_node == SELL_CREATE_PRICE:
+            self.price = message
+            self.current_node = SELL_CREATE_DESCRIPTION
+        elif self.current_node == SELL_CREATE_DESCRIPTION:
+            self.description = message
+            self.current_node = SELL_CREATE_IMAGES
+        elif self.current_node == SELL_CREATE_IMAGES:
+            self.image = image
+            self.current_node = SELL_CONFIRM
+            self.store = {"title": self.title,"price": self.price, "description": self.description, "user_id": self.user_id, "coordinates": self.coordinates, "image": self.image}
+            return self.api.store_rep(self.store) + "\n" + SELL_CONFIRM 
+        elif self.current_node == SELL_CONFIRM:
+            if message == "Y":
+                self.api.stores.append(self.store)
+                self.current_node = BUY_OR_SELL
+                return SELL_READY
+            elif message == "N":
+                self.current_node = SELL_CREATE_TITLE
         
         return self.current_node
-
-def get_distance(origin, stores):
-    origin = ",".join([str(each) for each in origin])
-    destinations = "|".join([",".join([str(each) for each in store["coordinates"]]) for store in stores])
-    url = f'https://maps.googleapis.com/maps/api/distancematrix/json?origins={origin}&destinations={destinations}&key={os.environ.get("GOOGLE_KEY")}'
-    response = requests.get(url)
-
-    if response.status_code != 200:
-        raise Exception(f"Request reurned an error  %s : %s" % (response.status_code, response.text))
-
-    parsed = json.loads(response.text)
-    return parsed
-
-
-        
 
 class API():
 
     def __init__(self):
         self.users = []
         self.conversations = []
-        self.stores = [{"message": "tacos", "user_id": "9722949822", "coordinates": (42, -72), "image_url": "https://picsum.photos/200/300"}, {"message": "pupusas", "user_id": "9722949823", "coordinates": (42, -71), "image_url": "https://picsum.photos/200/300"}]
+        self.stores = [{"title": "pupusas", "price": 2, "description": "Pupusas hot and ready! Cheese, Beans, Chicharron", "user_id": "9722941822", "coordinates": (42.2, -72.3), "image": "https://picsum.photos/200/300"},]
+
+    def get_distance(self, origin, stores):
+        origin = ",".join([str(each) for each in origin])
+        destinations = "|".join([",".join([str(each) for each in store["coordinates"]]) for store in stores])
+        url = f'https://maps.googleapis.com/maps/api/distancematrix/json?origins={origin}&destinations={destinations}&key={os.environ.get("GOOGLE_KEY")}'
+        response = requests.get(url)
+
+        if response.status_code != 200:
+            raise Exception(f"Request reurned an error  %s : %s" % (response.status_code, response.text))
+
+        parsed = json.loads(response.text)
+        return parsed
+
+    def store_rep(self, store, expand = False):
+        if expand:
+            return f'title: {store["title"]}\nprice: ${store["price"]}\ndescription: {store["description"]}\ncell: {store["user_id"]}\naddress: {store["address"]}\ndistance: {store["duration"]}\nimage: {store["image"]}' 
+        return f'title: {store["title"]}\nprice: ${store["price"]}\ndescription: {store["description"]}\ncell: {store["user_id"]}\nimage: {store["image"]}' 
+        
 
     def add_user(self, user_id):
         user = {"user_id": user_id, "conversation": Convo(self, user_id)}
@@ -120,9 +144,10 @@ class API():
     def delete_store(self, user_id):
         self.stores = [store for store in self.stores if not store['user_id'] == user_id]
 
-    def get_all_stores_TEXT(self, coordinates):
+    def get_stores_sorted(self, coordinates):
         
-        res = get_distance(coordinates, self.stores)
+        res = self.get_distance(coordinates, self.stores)
+
         stores = self.stores
         for i, store in enumerate(stores):
             store["address"] = res["destination_addresses"][i]
@@ -133,20 +158,14 @@ class API():
 
         stores_list = ""
         for i, store in enumerate(stores):
-            stores_list += "({}) {} - {} \n".format(i, store["message"], store["duration"])
+            stores_list += "({}) ${}/{} - {} \n".format(i, store['price'], store["title"], store["duration"])
         return stores_list[:-1]
 
-    def get_my_stores_TEXT(self, user_id):
-        stores = self.get_my_stores(user_id)
-        stores_list = ""
-        for i, store in enumerate(self.stores):
-            stores_list += "({}) {} \n".format(i, store["message"])
-        return stores_list[:-1]
-    
     def get_my_stores(self, user_id):
         return [store for store in self.stores if store["user_id"] == user_id]
 
     def serve(self, user_id, message, coordinates, image_url = ""):
+
         if not self.user_exists(user_id):
             self.add_user(user_id)
         user = self.get_user(user_id)
@@ -166,7 +185,7 @@ if __name__ == "__main__":
     user_id = "9722949822"
     reply = api.serve(user_id, "opening message", None)
     while(True):
-        print(reply)
+        print(reply[0])
         message = input()
         if message == 'quit':
             break
